@@ -31,11 +31,16 @@ jobs:
             ['geo5/social/og-gis.svg','geo5/public/og-gis.jpg'],
             ['geo5/social/og-place.svg','geo5/public/og-place.jpg']
           ];
-          Promise.all(jobs.map(([src,dst]) => sharp(src)
-            .resize(1200,630,{fit:'fill'})
-            .jpeg({quality:88,chromaSubsampling:'4:4:4',mozjpeg:true})
-            .toFile(dst)
-          )).then(info => console.log(info)).catch(err => { console.error(err); process.exit(1); });
+          Promise.all(jobs.map(async ([src,dst]) => {
+            const info = await sharp(src)
+              .resize(1200,630,{fit:'fill'})
+              .jpeg({quality:88,chromaSubsampling:'4:4:4',mozjpeg:true})
+              .toFile(dst);
+            if (info.width !== 1200 || info.height !== 630 || info.format !== 'jpeg') {
+              throw new Error(`Unexpected social image output for ${dst}: ${JSON.stringify(info)}`);
+            }
+            console.log(dst, info.width, info.height, info.format, info.size);
+          })).catch(err => { console.error(err); process.exit(1); });
           NODE
           python <<'PY'
           from pathlib import Path
@@ -50,13 +55,6 @@ jobs:
               p.write_text(s)
           PY
           file geo5/public/og-gis.jpg geo5/public/og-place.jpg
-          python <<'PY'
-          from PIL import Image
-          for f in ('geo5/public/og-gis.jpg','geo5/public/og-place.jpg'):
-              im=Image.open(f)
-              assert im.size == (1200,630), (f, im.size)
-              print(f, im.size)
-          PY
       - name: Commit rendered cards and clean failed staging
         run: |
           set -euo pipefail
