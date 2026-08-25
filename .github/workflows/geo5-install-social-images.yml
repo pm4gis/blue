@@ -1,0 +1,40 @@
+name: Geo5 install social images
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/geo5-install-social-images.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install social preview images
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd geo5
+          base64 -d .og-gis.jpg.b64 > public/og-gis.jpg
+          base64 -d .og-place.jpg.b64 > public/og-place.jpg
+          file public/og-gis.jpg public/og-place.jpg
+          python - <<'PY'
+          from pathlib import Path
+          for name in ('public/index.html','public/place.html'):
+              p=Path(name)
+              s=p.read_text()
+              s=s.replace('og-gis.png','og-gis.jpg').replace('og-place.png','og-place.jpg')
+              p.write_text(s)
+          PY
+          rm .og-gis.jpg.b64 .og-place.jpg.b64
+          cd ..
+          git config user.name 'Geo5 deployment bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add geo5/public/og-gis.jpg geo5/public/og-place.jpg geo5/public/index.html geo5/public/place.html geo5/.og-gis.jpg.b64 geo5/.og-place.jpg.b64
+          git commit -m 'Add new Geo5 GIS and PLACE social cards'
+          git pull --rebase origin main
+          git push origin HEAD:main
