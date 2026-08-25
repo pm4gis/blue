@@ -26,22 +26,13 @@ jobs:
       - name: Persist skills in repository
         run: |
           set -euo pipefail
+          test -d "$HOME/.agents/skills"
+          rm -rf .github/skills
           mkdir -p .github/skills
-          copied=0
-          for root in "$HOME/.agents/skills" "$HOME/.copilot/skills" "$HOME/.codex/skills" "$HOME/.claude/skills"; do
-            if [ -d "$root" ]; then
-              cp -a "$root/." .github/skills/
-              copied=1
-            fi
-          done
-          if [ "$copied" -ne 1 ]; then
-            echo 'No installed skills directory found.' >&2
-            find "$HOME" -maxdepth 4 -name SKILL.md -print || true
-            exit 1
-          fi
+          cp -aL "$HOME/.agents/skills/." .github/skills/
           count=$(find .github/skills -name SKILL.md | wc -l)
           echo "Cloudflare skills persisted: $count"
-          test "$count" -gt 0
+          test "$count" -eq 13
       - name: Commit skills and remove one-off installer
         run: |
           set -euo pipefail
