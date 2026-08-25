@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en-NZ">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Geo5 | Daily GIS & New Zealand Place Puzzles</title>
+  <meta name="description" content="Two daily five-letter New Zealand geospatial puzzles: GIS and PLACE. New puzzles unlock at 9am New Zealand time on business days.">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <link rel="canonical" href="https://geo5.pm4gis.nz/">
+  <meta name="theme-color" content="#020817">
+  <meta name="application-name" content="Geo5">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Geo5">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <meta property="og:type" content="website"><meta property="og:site_name" content="Geo5"><meta property="og:locale" content="en_NZ">
+  <meta property="og:title" content="Geo5 | Today’s GIS puzzle"><meta property="og:description" content="Five letters. One daily New Zealand GIS puzzle. Then try PLACE."><meta property="og:url" content="https://geo5.pm4gis.nz/"><meta property="og:image" content="https://geo5.pm4gis.nz/og-gis.png">
+  <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Geo5 | Today’s GIS puzzle"><meta name="twitter:image" content="https://geo5.pm4gis.nz/og-gis.png">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body data-mode="gis">
+  <div class="science-bg" aria-hidden="true"><div class="stars"></div><div class="gridfield"></div><div class="scan"></div><div class="contours"></div><div class="orbit"></div></div>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/" aria-label="Geo5 home"><span class="brandmark" aria-hidden="true"></span><strong>Geo5</strong></a>
+      <nav class="modebar" role="tablist" aria-label="Puzzle type">
+        <a class="mode is-active" id="gisTab" href="/" role="tab" aria-selected="true"><span>GIS</span><small>spatial</small><i id="gisDone" aria-hidden="true"></i></a>
+        <a class="mode" id="placeTab" href="/place" role="tab" aria-selected="false"><span>PLACE</span><small>Aotearoa</small><i id="placeDone" aria-hidden="true"></i></a>
+      </nav>
+      <div class="toolbar">
+        <button class="icon" id="reminderBtn" type="button" aria-label="Add 9am puzzle reminders">◷</button>
+        <button class="icon" id="statsBtn" type="button" aria-label="Statistics">▥</button>
+        <button class="icon" id="helpBtn" type="button" aria-label="How to play">?</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="game-shell" aria-label="Geo5 GIS puzzle">
+      <div class="statusline"><div class="left"><span id="puzzleNum">Puzzle</span><span class="dot"></span><span id="puzzleDate"></span></div><span class="release">Two puzzles · weekdays · 9am NZ</span></div>
+      <div class="theme-card" id="themeCard"><div><small>Theme</small><strong id="themeText">Loading…</strong></div><span id="themeGlyph" aria-hidden="true">⌖</span></div>
+      <div class="clues" aria-live="polite"><div class="clue-line" id="hint2Wrap" hidden><small>Field note</small><p id="hint2"></p></div><div class="clue-line final" id="hint3Wrap" hidden><small>Final clue</small><p id="hint3"></p></div></div>
+      <div class="board-wrap"><div class="axis axis-x" aria-hidden="true">E 174°</div><div class="axis axis-y" aria-hidden="true">S 41°</div><div class="board" id="board" aria-label="Guess grid"></div></div>
+      <div class="toast" id="toast" aria-live="polite"></div>
+      <div class="keys" id="keys" aria-label="On-screen keyboard"></div>
+      <div class="extend" id="extend" hidden><p>Six rows used. Continue if you want to finish it.</p><div><button class="secondary" id="addRow" type="button">Add another row</button> <button class="text-button" id="giveUp" type="button">Reveal answer</button></div></div>
+      <div class="result" id="result" hidden><small id="resultKicker">Survey complete</small><h2 id="resultTitle"></h2><p id="resultCopy"></p><div class="result-actions"><button class="primary" id="share" type="button">Share result</button><button class="secondary" id="copy" type="button">Copy squares</button><button class="secondary" id="shareBoth" type="button" hidden>Share both</button></div><a class="other-game" id="otherGame" href="/place" hidden>PLACE is still waiting <span>→</span></a></div>
+    </section>
+    <div class="app-actions" aria-label="Geo5 app actions">
+      <button class="app-action" id="installBtn" type="button">Add Geo5 to device</button>
+      <button class="app-action" id="bookmarkBtn" type="button">☆ Bookmark</button>
+    </div>
+    <section class="below-grid" aria-label="Puzzle information">
+      <div class="micro-card"><small>Next</small><strong id="next">Calculating…</strong><span class="count" id="count">--:--:--</span></div>
+      <a class="micro-card link" href="https://nz-gis-coffee-break.vercel.app/" target="_blank" rel="noopener"><small>More</small><strong>NZ GIS Coffee Break ↗</strong></a>
+    </section>
+  </main>
+
+  <footer><span>Geo5</span><span>Two daily geospatial puzzles for Aotearoa New Zealand.</span><a href="mailto:pm4gis@gmail.com">pm4gis@gmail.com</a></footer>
+
+  <dialog id="help"><button class="close" data-close="help" aria-label="Close">×</button><small>How to play</small><h2>Five letters</h2><p>Guess the answer. The broad theme is visible immediately. A stronger clue appears when row 5 becomes active, and the final clue appears on row 6.</p><p>After six guesses you can add rows one at a time. Extra rows remain part of the result.</p><div class="legend"><span class="correct">G</span><span class="present">I</span><span class="absent">S</span></div><p>Green is correct and correctly placed. Yellow is in the answer but in another position. Slate means the letter is not in the answer.</p></dialog>
+  <dialog id="stats"><button class="close" data-close="stats" aria-label="Close">×</button><small>Your statistics</small><h2 id="statsTitle">GIS</h2><div class="stats-grid"><div><b id="sp">0</b><span>Played</span></div><div><b id="sw">0%</b><span>Win rate</span></div><div><b id="ss">0</b><span>Streak</span></div><div><b id="sb">0</b><span>Best</span></div><div><b id="sx">0</b><span>Extended</span></div></div></dialog>
+  <dialog id="bookmark"><button class="close" data-close="bookmark" aria-label="Close">×</button><small>Keep Geo5 handy</small><h2>Bookmark Geo5</h2><p id="bookmarkText"></p><button class="primary" id="copyUrl" type="button">Copy site address</button></dialog>
+  <dialog id="install"><button class="close" data-close="install" aria-label="Close">×</button><small>Install Geo5</small><h2>Add it to your device</h2><p id="installText">Install Geo5 to launch it from your home screen or app list.</p></dialog>
+  <dialog id="reminder"><button class="close" data-close="reminder" aria-label="Close">×</button><small>Daily release</small><h2>9am puzzle reminder</h2><p>Add the remaining weekday releases to your calendar. Each reminder is set for 9:00 am New Zealand time.</p><button class="primary" id="calBtn" type="button">Add calendar reminders</button></dialog>
+  <script src="/app.js" defer></script>
+</body></html>
