@@ -1,0 +1,74 @@
+name: Geo5 Cloudflare OAuth deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/geo5-cloudflare-oauth.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: geo5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Authorize Cloudflare, deploy, and verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          LOGIN_LOG="$RUNNER_TEMP/wrangler-device.log"
+          npx --yes wrangler@latest login --device --browser=false >"$LOGIN_LOG" 2>&1 &
+          LOGIN_PID=$!
+          for i in $(seq 1 45); do
+            if grep -q 'dash.cloudflare.com/oauth2/device' "$LOGIN_LOG"; then
+              break
+            fi
+            if ! kill -0 "$LOGIN_PID" 2>/dev/null; then
+              cat "$LOGIN_LOG" >&2
+              exit 1
+            fi
+            sleep 1
+          done
+          DEVICE_URL=$(grep -oE 'https://dash\.cloudflare\.com/oauth2/device[^[:space:]]*' "$LOGIN_LOG" | tail -1 || true)
+          DEVICE_CODE=$(grep -oE '[A-Z0-9]{4}-[A-Z0-9]{4}' "$LOGIN_LOG" | tail -1 || true)
+          test -n "$DEVICE_URL"
+          test -n "$DEVICE_CODE"
+          printf '%s\n%s\n' "$DEVICE_URL" "$DEVICE_CODE" > "$RUNNER_TEMP/device.txt"
+          openssl pkeyutl -encrypt -pubin \
+            -inkey .cloudflare-device-public.pem \
+            -pkeyopt rsa_padding_mode:oaep \
+            -in "$RUNNER_TEMP/device.txt" -out "$RUNNER_TEMP/device.enc"
+          echo "CF_DEVICE_ENCRYPTED=$(base64 -w0 "$RUNNER_TEMP/device.enc")"
+          rm -f "$RUNNER_TEMP/device.txt"
+          wait "$LOGIN_PID"
+          npx --yes wrangler@latest whoami
+          npx --yes wrangler@latest deploy --config wrangler.jsonc
+          for i in $(seq 1 30); do
+            ROOT=$(curl -sS -o "$RUNNER_TEMP/root" -w '%{http_code}' --max-time 15 https://geo5.pm4gis.nz/ || true)
+            API=$(curl -sS -o "$RUNNER_TEMP/api" -w '%{http_code}' --max-time 15 'https://geo5.pm4gis.nz/api/puzzle?mode=gis&attempts=0' || true)
+            PLACE=$(curl -sS -o "$RUNNER_TEMP/place" -w '%{http_code}' --max-time 15 https://geo5.pm4gis.nz/place || true)
+            MANIFEST=$(curl -sS -o "$RUNNER_TEMP/manifest" -w '%{http_code}' --max-time 15 https://geo5.pm4gis.nz/manifest.webmanifest || true)
+            if [ "$ROOT" = 200 ] && [ "$API" = 200 ] && [ "$PLACE" = 200 ] && [ "$MANIFEST" = 200 ]; then
+              grep -q 'Geo5' "$RUNNER_TEMP/root"
+              grep -q '"mode":"gis"' "$RUNNER_TEMP/api"
+              grep -q 'PLACE' "$RUNNER_TEMP/place"
+              grep -q 'Geo5' "$RUNNER_TEMP/manifest"
+              echo 'GEO5_CUSTOM_DOMAIN_VERIFIED'
+              exit 0
+            fi
+            echo "Waiting for geo5.pm4gis.nz: root=$ROOT api=$API place=$PLACE manifest=$MANIFEST"
+            sleep 5
+          done
+          echo 'Custom domain verification timed out.' >&2
+          exit 1
