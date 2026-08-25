@@ -29,11 +29,11 @@ jobs:
           set -euo pipefail
           LOGIN_LOG="$RUNNER_TEMP/wrangler-device.log"
           CLEAN_LOG="$RUNNER_TEMP/wrangler-device-clean.log"
-          npx --yes wrangler@latest login --device --browser=false >"$LOGIN_LOG" 2>&1 &
+          env -u CI TERM=xterm script -q -f -c "npx --yes wrangler@latest login --device --browser=false" "$LOGIN_LOG" >/dev/null 2>&1 &
           LOGIN_PID=$!
           for i in $(seq 1 45); do
-            sed -r 's/\x1B\[[0-9;]*[mK]//g' "$LOGIN_LOG" > "$CLEAN_LOG" || true
-            if grep -q 'dash.cloudflare.com/oauth2/device' "$CLEAN_LOG"; then
+            sed -r 's/\x1B\[[0-9;]*[mK]//g' "$LOGIN_LOG" 2>/dev/null | tr -d '\r' > "$CLEAN_LOG" || true
+            if grep -q 'dash.cloudflare.com/oauth2/device/verify' "$CLEAN_LOG"; then
               break
             fi
             if ! kill -0 "$LOGIN_PID" 2>/dev/null; then
@@ -42,9 +42,9 @@ jobs:
             fi
             sleep 1
           done
-          sed -r 's/\x1B\[[0-9;]*[mK]//g' "$LOGIN_LOG" > "$CLEAN_LOG"
-          DEVICE_URL=$(grep -oE 'https://dash\.cloudflare\.com/oauth2/device[^[:space:]]*' "$CLEAN_LOG" | tail -1 || true)
-          DEVICE_CODE=$(grep -oE '[A-Z0-9]{4}-[A-Z0-9]{4}' "$CLEAN_LOG" | tail -1 || true)
+          sed -r 's/\x1B\[[0-9;]*[mK]//g' "$LOGIN_LOG" | tr -d '\r' > "$CLEAN_LOG"
+          DEVICE_URL=$(grep -oE 'https://dash\.cloudflare\.com/oauth2/device/verify' "$CLEAN_LOG" | tail -1 || true)
+          DEVICE_CODE=$(awk '/enter the code:/{f=1;next} f && $0 ~ /[[:alnum:]]/{gsub(/[^A-Za-z0-9]/,""); print; exit}' "$CLEAN_LOG")
           test -n "$DEVICE_URL"
           test -n "$DEVICE_CODE"
           printf '%s\n%s\n' "$DEVICE_URL" "$DEVICE_CODE" > "$RUNNER_TEMP/device.txt"
