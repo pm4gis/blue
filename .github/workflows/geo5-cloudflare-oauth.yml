@@ -1,5 +1,4 @@
 name: Geo5 Cloudflare OAuth deploy
-# retry after pinning the production Cloudflare account
 
 on:
   push:
@@ -22,9 +21,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
-      - name: Authorize Cloudflare, deploy, and verify
+      - name: Install dependencies and test
+        run: |
+          npm install --no-audit --no-fund
+          npm test
+      - name: Authorize Cloudflare, deploy, verify, and connect builds
         shell: bash
         run: |
           set -euo pipefail
@@ -61,24 +62,77 @@ jobs:
           git pull --rebase origin main
           git push origin HEAD:main
           rm -f "$RUNNER_TEMP/device.txt"
+
           wait "$LOGIN_PID"
           npx --yes wrangler@latest whoami
           npx --yes wrangler@latest deploy --config wrangler.jsonc
+
           for i in $(seq 1 30); do
-            ROOT=$(curl -sS -o "$RUNNER_TEMP/root" -w '%{http_code}' --max-time 15 https://geo5.pm4gis.nz/ || true)
-            API=$(curl -sS -o "$RUNNER_TEMP/api" -w '%{http_code}' --max-time 15 'https://geo5.pm4gis.nz/api/puzzle?mode=gis&attempts=0' || true)
-            PLACE=$(curl -sS -o "$RUNNER_TEMP/place" -w '%{http_code}' --max-time 15 https://geo5.pm4gis.nz/place || true)
-            MANIFEST=$(curl -sS -o "$RUNNER_TEMP/manifest" -w '%{http_code}' --max-time 15 https://geo5.pm4gis.nz/manifest.webmanifest || true)
-            if [ "$ROOT" = 200 ] && [ "$API" = 200 ] && [ "$PLACE" = 200 ] && [ "$MANIFEST" = 200 ]; then
+            ROOT=$(curl -sSL -o "$RUNNER_TEMP/root" -w '%{http_code}' --max-time 15 https://geo5.pm4gis.nz/ || true)
+            API=$(curl -sSL -o "$RUNNER_TEMP/api" -w '%{http_code}' --max-time 15 'https://geo5.pm4gis.nz/api/puzzle?mode=gis&attempts=0' || true)
+            PLACE=$(curl -sSL -o "$RUNNER_TEMP/place" -w '%{http_code}' --max-time 15 https://geo5.pm4gis.nz/place || true)
+            MANIFEST=$(curl -sSL -o "$RUNNER_TEMP/manifest" -w '%{http_code}' --max-time 15 https://geo5.pm4gis.nz/manifest.webmanifest || true)
+            SW=$(curl -sSL -o "$RUNNER_TEMP/sw" -w '%{http_code}' --max-time 15 https://geo5.pm4gis.nz/sw.js || true)
+            if [ "$ROOT" = 200 ] && [ "$API" = 200 ] && [ "$PLACE" = 200 ] && [ "$MANIFEST" = 200 ] && [ "$SW" = 200 ]; then
               grep -q 'Geo5' "$RUNNER_TEMP/root"
               grep -q '"mode":"gis"' "$RUNNER_TEMP/api"
               grep -q 'PLACE' "$RUNNER_TEMP/place"
               grep -q 'Geo5' "$RUNNER_TEMP/manifest"
               echo 'GEO5_CUSTOM_DOMAIN_VERIFIED'
-              exit 0
+              break
             fi
-            echo "Waiting for geo5.pm4gis.nz: root=$ROOT api=$API place=$PLACE manifest=$MANIFEST"
+            echo "Waiting for geo5.pm4gis.nz: root=$ROOT api=$API place=$PLACE manifest=$MANIFEST sw=$SW"
+            if [ "$i" = 30 ]; then
+              echo 'Custom domain verification timed out.' >&2
+              exit 1
+            fi
             sleep 5
           done
-          echo 'Custom domain verification timed out.' >&2
-          exit 1
+
+          # Best-effort Workers Builds connection. This succeeds only if the
+          # Cloudflare GitHub App/build token are already authorised on the account.
+          ACCOUNT_ID='a08ad3624a2cdfed44f6721ad412d6c2'
+          OAUTH_TOKEN=$(python - <<'PY'
+          import pathlib, tomllib
+          p = pathlib.Path.home()/'.config/.wrangler/config/default.toml'
+          try:
+              data = tomllib.loads(p.read_text())
+          except Exception:
+              print('')
+              raise SystemExit
+          preferred = []
+          fallback = []
+          def walk(obj, path=''):
+              if isinstance(obj, dict):
+                  for k,v in obj.items():
+                      key = f'{path}.{k}' if path else k
+                      if isinstance(v, str) and 'token' in k.lower() and len(v) > 20:
+                          (preferred if 'oauth' in k.lower() and 'refresh' not in k.lower() else fallback).append(v)
+                      else:
+                          walk(v, key)
+          walk(data)
+          print((preferred or fallback or [''])[0])
+          PY
+          )
+          if [ -n "$OAUTH_TOKEN" ]; then
+            REPO_JSON=$(curl -sS "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/builds/repos/connections" \
+              -H "Authorization: Bearer $OAUTH_TOKEN" \
+              -H 'Content-Type: application/json' \
+              -X PUT \
+              --data '{"provider_type":"github","provider_account_id":"26127153","provider_account_name":"pm4gis","repo_id":"1172993468","repo_name":"blue"}' || true)
+            echo "$REPO_JSON" > "$RUNNER_TEMP/builds-repo.json"
+            if python - "$RUNNER_TEMP/builds-repo.json" <<'PY'
+          import json,sys
+          try:
+              d=json.load(open(sys.argv[1])); ok=bool(d.get('success'))
+          except Exception: ok=False
+          raise SystemExit(0 if ok else 1)
+          PY
+            then
+              echo 'CLOUDFLARE_GITHUB_REPO_CONNECTION_CREATED'
+            else
+              echo 'CLOUDFLARE_BUILDS_CONNECTION_NOT_AVAILABLE_WITH_WRANGLER_OAUTH'
+            fi
+          else
+            echo 'CLOUDFLARE_BUILDS_OAUTH_TOKEN_NOT_EXTRACTABLE'
+          fi
