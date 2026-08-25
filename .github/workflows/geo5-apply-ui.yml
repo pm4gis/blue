@@ -1,0 +1,82 @@
+name: Apply Geo5 place maps UI
+
+on:
+  push:
+    paths:
+      - '.github/workflows/geo5-apply-ui.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Patch PLACE maps link and refresh PWA cache
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p=Path(path); s=p.read_text()
+              if s.count(old)!=1:
+                  raise SystemExit(f'{path}: expected one match, found {s.count(old)} for {old[:80]!r}')
+              p.write_text(s.replace(old,new,1))
+
+          app='geo5/public/app.js'
+          replace_once(app,
+            "const S={id:-1,date:null,g:[],e:[],cur:'',done:false,res:null,answer:null,meta:null,theme:null,hint2:null,hint3:null,rows:6,busy:false,recorded:false};",
+            "const S={id:-1,date:null,g:[],e:[],cur:'',done:false,res:null,answer:null,mapUrl:null,meta:null,theme:null,hint2:null,hint3:null,rows:6,busy:false,recorded:false};")
+          replace_once(app,
+            "function save(){localStorage.setItem(stateKey(),JSON.stringify({g:S.g,e:S.e,done:S.done,res:S.res,answer:S.answer,rows:S.rows,recorded:S.recorded}))}",
+            "function save(){localStorage.setItem(stateKey(),JSON.stringify({g:S.g,e:S.e,done:S.done,res:S.res,answer:S.answer,mapUrl:S.mapUrl,rows:S.rows,recorded:S.recorded}))}")
+          replace_once(app,
+            "if(d.correct){S.done=true;S.res='w';S.answer=d.answer||null;save();render();finish(true)}",
+            "if(d.correct){S.done=true;S.res='w';S.answer=d.answer||null;S.mapUrl=d.mapUrl||null;save();render();finish(true)}")
+          replace_once(app,
+            "S.done=true;S.res='l';S.answer=d.answer||null;save();render();finish(false)",
+            "S.done=true;S.res='l';S.answer=d.answer||null;S.mapUrl=d.mapUrl||null;save();render();finish(false)")
+          replace_once(app,
+            "S.answer=x.answer||null;S.rows=Math.max(6,x.rows||6,S.g.length);",
+            "S.answer=x.answer||null;S.mapUrl=x.mapUrl||null;S.rows=Math.max(6,x.rows||6,S.g.length);")
+          replace_once(app,
+            "if(!restore)updateStats(win);refreshModeMarks();const o=getCurrentOtherState();",
+            "if(!restore)updateStats(win);refreshModeMarks();const map=$('mapPlace');if(map){if(MODE==='place'&&S.answer){map.href=S.mapUrl||`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(S.answer+', New Zealand')}`;map.hidden=false}else map.hidden=true}const o=getCurrentOtherState();")
+
+          place='geo5/public/place.html'
+          replace_once(place,
+            '<button class="secondary" id="copy" type="button">Copy squares</button><button class="secondary" id="shareBoth" type="button" hidden>Share both</button>',
+            '<button class="secondary" id="copy" type="button">Copy squares</button><a class="secondary" id="mapPlace" href="#" target="_blank" rel="noopener noreferrer" hidden>Open in Google Maps ↗</a><button class="secondary" id="shareBoth" type="button" hidden>Share both</button>')
+
+          css=Path('geo5/public/styles.css')
+          s=css.read_text()
+          rule='\n.result-actions a.secondary{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}\n'
+          if rule.strip() not in s:
+              css.write_text(s+rule)
+
+          sw=Path('geo5/public/sw.js')
+          s=sw.read_text()
+          s=s.replace("const CACHE='geo5-shell-v1';","const CACHE='geo5-shell-v2';")
+          s=s.replace("'/og-gis.png','/og-place.png'","'/og-gis.jpg','/og-place.jpg'")
+          sw.write_text(s)
+          PY
+      - name: Test Geo5
+        working-directory: geo5
+        run: |
+          npm install --no-audit --no-fund
+          npm test
+          npm run check
+      - name: Commit UI changes
+        run: |
+          git config user.name 'Geo5 update bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add geo5/public/app.js geo5/public/place.html geo5/public/styles.css geo5/public/sw.js
+          git commit -m 'Add Google Maps link to PLACE results'
+          git pull --rebase origin main
+          git push origin HEAD:main
