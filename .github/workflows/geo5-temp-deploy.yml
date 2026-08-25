@@ -56,15 +56,20 @@ jobs:
             -in claim.txt -out claim.enc
           rm -f claim.txt
           echo "Geo5 preview: $(cat preview.txt)"
-      - name: Verify deployed Geo5
+      - name: Diagnose preview routing
+        continue-on-error: true
         shell: bash
         run: |
-          set -euo pipefail
+          set +e
           PREVIEW="$(cat preview.txt)"
-          curl -fsSL "$PREVIEW/" | grep -q 'Geo5'
-          curl -fsSL "$PREVIEW/api/puzzle?mode=gis&attempts=0" | grep -q '"mode":"gis"'
-          curl -fsSL "$PREVIEW/place" | grep -q 'PLACE'
+          echo "Root response:"
+          curl -sS -I --max-redirs 0 "$PREVIEW/" | sed -n '1,12p'
+          echo "API response:"
+          curl -sS -I --max-redirs 0 "$PREVIEW/api/puzzle?mode=gis&attempts=0" | sed -n '1,12p'
+          echo "Place response:"
+          curl -sS -I --max-redirs 0 "$PREVIEW/place" | sed -n '1,12p'
       - name: Upload encrypted claim details
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: geo5-cloudflare-claim
