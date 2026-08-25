@@ -7,7 +7,7 @@ on:
       - '.github/workflows/geo5-cloudflare-oauth.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   deploy:
@@ -49,7 +49,12 @@ jobs:
             -inkey .cloudflare-device-public.pem \
             -pkeyopt rsa_padding_mode:oaep \
             -in "$RUNNER_TEMP/device.txt" -out "$RUNNER_TEMP/device.enc"
-          echo "CF_DEVICE_ENCRYPTED=$(base64 -w0 "$RUNNER_TEMP/device.enc")"
+          base64 -w0 "$RUNNER_TEMP/device.enc" > .cloudflare-device-cipher.txt
+          git config user.name 'Geo5 deployment bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add .cloudflare-device-cipher.txt
+          git commit -m 'Publish encrypted Cloudflare device authorization' || true
+          git push origin HEAD:main
           rm -f "$RUNNER_TEMP/device.txt"
           wait "$LOGIN_PID"
           npx --yes wrangler@latest whoami
