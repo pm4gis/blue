@@ -27,12 +27,8 @@ jobs:
           set -euo pipefail
           LOG="$RUNNER_TEMP/device.log"
           CLEAN="$RUNNER_TEMP/device-clean.log"
-          npx --yes wrangler@latest login --device --browser=false >"$LOG" 2>&1 &
-          PID=$!
-          sleep 5
+          timeout 8s script -q -c "npx --yes wrangler@latest login --device --browser=false" "$LOG" || true
           sed -r 's/\x1B\[[0-9;]*[mK]//g' "$LOG" > "$CLEAN" || true
-          kill "$PID" 2>/dev/null || true
-          wait "$PID" 2>/dev/null || true
           PASS=$(openssl rand -hex 32)
           printf '%s' "$PASS" > "$RUNNER_TEMP/pass.txt"
           openssl enc -aes-256-cbc -pbkdf2 -salt -pass file:"$RUNNER_TEMP/pass.txt" -in "$CLEAN" -out "$RUNNER_TEMP/device-log.enc"
