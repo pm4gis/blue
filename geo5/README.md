@@ -23,3 +23,7 @@ The `wrangler.jsonc` Custom Domain configuration attaches `geo5.pm4gis.nz`. Beca
 ## PWA
 
 Geo5 includes a web app manifest, 192/512 icons, a service worker, standalone display mode, install controls and bookmark instructions. Puzzle API responses remain network-only so future answers are not cached into the browser.
+
+## Social previews
+
+GIS and PLACE each use a dedicated 1200 × 630 social preview card. The generated JPEGs live in `public/og-gis.jpg` and `public/og-place.jpg`, with editable SVG sources in `social/`.
