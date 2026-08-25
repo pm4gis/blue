@@ -1,5 +1,5 @@
 name: Geo5 Cloudflare OAuth deploy
-# one-off production deployment with social-card verification
+# production deployment with puzzle-pool, PLACE maps and social-card verification
 
 on:
   push:
@@ -86,15 +86,19 @@ jobs:
               grep -q 'Geo5' "$RUNNER_TEMP/root"
               grep -q 'og-gis.jpg' "$RUNNER_TEMP/root"
               grep -q '"mode":"gis"' "$RUNNER_TEMP/api"
+              grep -q '"total":150' "$RUNNER_TEMP/api"
               grep -q 'PLACE' "$RUNNER_TEMP/place"
+              grep -q 'mapPlace' "$RUNNER_TEMP/place"
+              grep -q 'Open in Google Maps' "$RUNNER_TEMP/place"
               grep -q 'og-place.jpg' "$RUNNER_TEMP/place"
               grep -q "Copied for sharing" "$RUNNER_TEMP/appjs"
+              grep -q 'google.com/maps/search' "$RUNNER_TEMP/appjs"
               ! grep -q 'navigator.share' "$RUNNER_TEMP/appjs"
               grep -qi '^content-type: image/jpeg' "$RUNNER_TEMP/gisog.headers"
               grep -qi '^content-type: image/jpeg' "$RUNNER_TEMP/placeog.headers"
               file "$RUNNER_TEMP/gisog" | grep -q '1200x630'
               file "$RUNNER_TEMP/placeog" | grep -q '1200x630'
-              echo 'GEO5_PRODUCTION_AND_SOCIAL_CARDS_VERIFIED'
+              echo 'GEO5_150_PUZZLES_PLACE_MAPS_AND_SOCIAL_CARDS_VERIFIED'
               exit 0
             fi
             echo "Waiting for Geo5: root=$ROOT api=$API place=$PLACE appjs=$APPJS gisog=$GISOG placeog=$PLACEOG"
