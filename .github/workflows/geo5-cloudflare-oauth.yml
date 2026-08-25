@@ -1,4 +1,5 @@
 name: Geo5 Cloudflare OAuth deploy
+# deploy clipboard-only sharing update
 
 on:
   push:
