@@ -1,0 +1,75 @@
+name: Geo5 temporary Cloudflare deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/geo5-temp-deploy.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: geo5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Prepare temporary Wrangler config
+        run: |
+          cat > wrangler.temporary.jsonc <<'JSON'
+          {
+            "name": "geo5",
+            "main": "src/index.js",
+            "compatibility_date": "2026-08-25",
+            "compatibility_flags": ["nodejs_compat"],
+            "assets": {
+              "directory": "./public",
+              "binding": "ASSETS",
+              "run_worker_first": ["/api/*", "/place", "/place/"]
+            }
+          }
+          JSON
+      - name: Deploy temporary Worker without exposing claim token
+        shell: bash
+        run: |
+          set -euo pipefail
+          LOG="$RUNNER_TEMP/cf-deploy.txt"
+          npx --yes wrangler@latest deploy --temporary --config wrangler.temporary.jsonc >"$LOG" 2>&1
+          CLEAN="$RUNNER_TEMP/cf-deploy-clean.txt"
+          sed -r 's/\x1B\[[0-9;]*[mK]//g' "$LOG" > "$CLEAN"
+          grep -oE 'https://[^[:space:]]+\.workers\.dev' "$CLEAN" | tail -1 | tr -d '\r' > preview.txt
+          grep -oE 'https://dash\.cloudflare\.com/claim-preview\?claimToken=[^[:space:]]+' "$CLEAN" | tail -1 | tr -d '\r' > claim.txt
+          test -s preview.txt
+          test -s claim.txt
+          openssl pkeyutl -encrypt -pubin \
+            -inkey .cloudflare-claim-public.pem \
+            -pkeyopt rsa_padding_mode:oaep \
+            -in claim.txt -out claim.enc
+          rm -f claim.txt
+          echo "Geo5 preview: $(cat preview.txt)"
+      - name: Verify deployed Geo5
+        shell: bash
+        run: |
+          set -euo pipefail
+          PREVIEW="$(cat preview.txt)"
+          curl -fsSL "$PREVIEW/" | grep -q 'Geo5'
+          curl -fsSL "$PREVIEW/api/puzzle?mode=gis&attempts=0" | grep -q '"mode":"gis"'
+          curl -fsSL "$PREVIEW/place" | grep -q 'PLACE'
+      - name: Upload encrypted claim details
+        uses: actions/upload-artifact@v4
+        with:
+          name: geo5-cloudflare-claim
+          path: |
+            geo5/claim.enc
+            geo5/preview.txt
+          retention-days: 1
+          if-no-files-found: error
