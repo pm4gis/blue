@@ -1,0 +1,29 @@
+name: Geo5 check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'geo5/**'
+      - '.github/workflows/geo5-check.yml'
+  pull_request:
+    paths:
+      - 'geo5/**'
+      - '.github/workflows/geo5-check.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: geo5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: geo5/package-lock.json
+      - run: npm install
+      - run: npm test
+      - run: npm run check
