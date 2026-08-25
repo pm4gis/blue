@@ -1,0 +1,46 @@
+name: Geo5 live verify
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/geo5-live-verify.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify production
+        shell: bash
+        run: |
+          set -u
+          for i in $(seq 1 30); do
+            ROOT=$(curl -sSL -o "$RUNNER_TEMP/root" -w '%{http_code}' --max-time 15 https://geo5.pm4gis.nz/ || true)
+            API=$(curl -sSL -o "$RUNNER_TEMP/api" -w '%{http_code}' --max-time 15 'https://geo5.pm4gis.nz/api/puzzle?mode=gis&attempts=0' || true)
+            PLACE=$(curl -sSL -o "$RUNNER_TEMP/place" -w '%{http_code}' --max-time 15 https://geo5.pm4gis.nz/place || true)
+            APPJS=$(curl -sSL -o "$RUNNER_TEMP/appjs" -w '%{http_code}' --max-time 15 https://geo5.pm4gis.nz/app.js || true)
+            ok=1
+            [ "$ROOT" = 200 ] || ok=0
+            [ "$API" = 200 ] || ok=0
+            [ "$PLACE" = 200 ] || ok=0
+            [ "$APPJS" = 200 ] || ok=0
+            grep -q 'Geo5' "$RUNNER_TEMP/root" 2>/dev/null || ok=0
+            grep -q '"mode":"gis"' "$RUNNER_TEMP/api" 2>/dev/null || ok=0
+            grep -q '"total":150' "$RUNNER_TEMP/api" 2>/dev/null || ok=0
+            grep -q 'mapPlace' "$RUNNER_TEMP/place" 2>/dev/null || ok=0
+            grep -q 'Open in Google Maps' "$RUNNER_TEMP/place" 2>/dev/null || ok=0
+            grep -q 'google.com/maps/search' "$RUNNER_TEMP/appjs" 2>/dev/null || ok=0
+            grep -q 'Copied for sharing' "$RUNNER_TEMP/appjs" 2>/dev/null || ok=0
+            ! grep -q 'navigator.share' "$RUNNER_TEMP/appjs" 2>/dev/null || ok=0
+            if [ "$ok" = 1 ]; then
+              echo 'GEO5_150_LIVE_VERIFIED'
+              exit 0
+            fi
+            echo "Waiting for production propagation: root=$ROOT api=$API place=$PLACE appjs=$APPJS"
+            sleep 5
+          done
+          echo 'Live verification failed' >&2
+          exit 1
