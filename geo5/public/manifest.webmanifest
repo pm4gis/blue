@@ -1,0 +1,46 @@
+{
+  "id": "/",
+  "name": "Geo5",
+  "short_name": "Geo5",
+  "description": "Two daily five-letter New Zealand geospatial puzzles: GIS and PLACE.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone"
+  ],
+  "background_color": "#020817",
+  "theme_color": "#020817",
+  "orientation": "portrait-primary",
+  "categories": [
+    "games",
+    "education"
+  ],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "GIS puzzle",
+      "short_name": "GIS",
+      "url": "/"
+    },
+    {
+      "name": "PLACE puzzle",
+      "short_name": "PLACE",
+      "url": "/place"
+    }
+  ]
+}
