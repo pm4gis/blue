@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#020817"/><stop offset="1" stop-color="#061b3b"/></linearGradient>
+  <radialGradient id="earth" cx="65%" cy="40%" r="70%"><stop stop-color="#1c78d4"/><stop offset=".45" stop-color="#0b477f"/><stop offset="1" stop-color="#03162d"/></radialGradient>
+  <linearGradient id="blue" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#57b6ff"/><stop offset="1" stop-color="#2d7ff0"/></linearGradient>
+  <filter id="glow"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <pattern id="grid" width="75" height="75" patternUnits="userSpaceOnUse"><path d="M75 0H0V75" fill="none" stroke="#2f6fad" stroke-opacity=".12" stroke-width="1"/></pattern>
+</defs>
+<rect width="1200" height="630" fill="url(#bg)"/><rect width="1200" height="630" fill="url(#grid)"/>
+<g fill="none" stroke="#287fd1" stroke-opacity=".22"><path d="M0 74c120-40 217 21 333-20s193-14 304 14"/><path d="M0 101c110-42 213 25 332-18s208-10 320 11"/><path d="M0 126c105-39 211 29 328-14s219-6 332 18"/><path d="M672 62C850 15 1015 36 1188 101"/><path d="M710 93c159-28 309-7 451 67"/></g>
+<g fill="#9bdcff" opacity=".9"><circle cx="715" cy="78" r="2"/><circle cx="770" cy="112" r="1.5"/><circle cx="899" cy="58" r="2"/><circle cx="1033" cy="108" r="1.4"/><circle cx="1105" cy="49" r="1.7"/><circle cx="828" cy="165" r="1.5"/></g>
+<g fill="none" stroke="#62b6ff" stroke-opacity=".36"><path d="M606 460C690 221 931 88 1195 119"/><path d="M658 499C749 291 949 179 1181 177" stroke-dasharray="5 9"/></g>
+<g transform="translate(48 46)"><circle cx="58" cy="58" r="47" fill="none" stroke="url(#blue)" stroke-width="10"/><circle cx="91" cy="22" r="12" fill="#45d1ce"/><path d="M30 59h54M57 31c-15 14-15 42 0 56M57 31c15 14 15 42 0 56M31 43h52M31 74h52" fill="none" stroke="#4fa8ff" stroke-width="4"/><circle cx="57" cy="59" r="27" fill="none" stroke="#4fa8ff" stroke-width="4"/></g>
+<text x="166" y="129" font-family="Arial,Helvetica,sans-serif" font-size="84" font-weight="800" fill="#fff">Geo5</text>
+<text x="50" y="235" font-family="Arial,Helvetica,sans-serif" font-size="58" font-weight="800" fill="url(#blue)">Daily GIS Puzzle</text>
+<text x="52" y="291" font-family="Arial,Helvetica,sans-serif" font-size="31" fill="#fff">Fun, easy, sometimes hard.</text>
+<text x="52" y="333" font-family="Arial,Helvetica,sans-serif" font-size="31" font-weight="700" fill="#fff">Test your knowledge.</text>
+<g transform="translate(52 371)" fill="#06172e" stroke="#54c5ff" stroke-width="3" filter="url(#glow)"><rect width="91" height="91" rx="13"/><rect x="106" width="91" height="91" rx="13"/><rect x="212" width="91" height="91" rx="13"/><rect x="318" width="91" height="91" rx="13"/><rect x="424" width="91" height="91" rx="13"/></g>
+<g transform="translate(52 497)"><path d="M24 2 45 10v18c0 17-10 29-21 36C13 57 3 45 3 28V10z" fill="none" stroke="#58a8ff" stroke-width="4"/><path d="m14 30 7 7 14-17" fill="none" stroke="#58a8ff" stroke-width="4"/><text x="64" y="40" font-family="Arial,Helvetica,sans-serif" font-size="25" fill="#eaf5ff">No tracking. No nonsense.</text></g>
+<g transform="translate(52 558)"><rect width="250" height="55" rx="12" fill="url(#blue)"/><text x="35" y="37" font-family="Arial,Helvetica,sans-serif" font-size="27" font-weight="700" fill="#fff">Play today  →</text><text x="325" y="37" font-family="Arial,Helvetica,sans-serif" font-size="27" fill="#e9f4ff">geo5.pm4gis.nz</text></g>
+<g transform="translate(657 213)"><ellipse cx="346" cy="336" rx="348" ry="208" fill="url(#earth)" stroke="#5fbaff" stroke-width="5" filter="url(#glow)"/><path d="M211 314c28-23 49-27 71-17 15 7 19 18 37 19 18 1 32-8 43-2 12 7 10 18 26 29 19 14 23 24 18 39-5 14-23 19-34 30-13 13-18 26-31 31-14 6-23-2-38 3-15 5-22 17-39 13-20-5-34-25-38-44-4-19-20-29-24-46-4-17 0-37 9-55z" fill="#78c7b0" opacity=".82"/><g fill="#d4f6ff" filter="url(#glow)"><circle cx="276" cy="337" r="3"/><circle cx="308" cy="369" r="3"/><circle cx="346" cy="390" r="4"/><circle cx="372" cy="420" r="3"/><circle cx="335" cy="443" r="3"/><circle cx="250" cy="389" r="2.5"/></g></g>
+<g font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#4c86bd" opacity=".75"><text x="607" y="97">60°S</text><text x="777" y="160">150°E</text><text x="1080" y="154">180°</text><text x="586" y="451">45°S</text></g>
+</svg>
