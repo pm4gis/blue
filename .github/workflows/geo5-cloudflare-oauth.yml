@@ -1,5 +1,5 @@
 name: Geo5 Cloudflare OAuth deploy
-# resilient one-off deployment flow for the clipboard-only Share update
+# one-off production deployment with social-card verification
 
 on:
   push:
@@ -26,6 +26,7 @@ jobs:
         run: |
           npm install --no-audit --no-fund
           npm test
+          npm run check
       - name: Authorize Cloudflare, deploy and verify
         shell: bash
         run: |
@@ -61,8 +62,6 @@ jobs:
           base64 -w0 "$RUNNER_TEMP/device.enc" > "$RUNNER_TEMP/device.cipher"
           rm -f "$RUNNER_TEMP/device.txt"
 
-          # Publish only the encrypted device prompt. Reset to the latest main first
-          # so repeated/expired authorisation runs cannot conflict with each other.
           git config user.name 'Geo5 deployment bot'
           git config user.email 'actions@users.noreply.github.com'
           git fetch origin main
@@ -81,19 +80,24 @@ jobs:
             API=$(curl -sSL -o "$RUNNER_TEMP/api" -w '%{http_code}' --max-time 15 'https://geo5.pm4gis.nz/api/puzzle?mode=gis&attempts=0' || true)
             PLACE=$(curl -sSL -o "$RUNNER_TEMP/place" -w '%{http_code}' --max-time 15 https://geo5.pm4gis.nz/place || true)
             APPJS=$(curl -sSL -o "$RUNNER_TEMP/appjs" -w '%{http_code}' --max-time 15 https://geo5.pm4gis.nz/app.js || true)
-            if [ "$ROOT" = 200 ] && [ "$API" = 200 ] && [ "$PLACE" = 200 ] && [ "$APPJS" = 200 ]; then
+            GISOG=$(curl -sSL -D "$RUNNER_TEMP/gisog.headers" -o "$RUNNER_TEMP/gisog" -w '%{http_code}' --max-time 15 https://geo5.pm4gis.nz/og-gis.jpg || true)
+            PLACEOG=$(curl -sSL -D "$RUNNER_TEMP/placeog.headers" -o "$RUNNER_TEMP/placeog" -w '%{http_code}' --max-time 15 https://geo5.pm4gis.nz/og-place.jpg || true)
+            if [ "$ROOT" = 200 ] && [ "$API" = 200 ] && [ "$PLACE" = 200 ] && [ "$APPJS" = 200 ] && [ "$GISOG" = 200 ] && [ "$PLACEOG" = 200 ]; then
               grep -q 'Geo5' "$RUNNER_TEMP/root"
+              grep -q 'og-gis.jpg' "$RUNNER_TEMP/root"
               grep -q '"mode":"gis"' "$RUNNER_TEMP/api"
               grep -q 'PLACE' "$RUNNER_TEMP/place"
+              grep -q 'og-place.jpg' "$RUNNER_TEMP/place"
               grep -q "Copied for sharing" "$RUNNER_TEMP/appjs"
-              if grep -q 'navigator.share' "$RUNNER_TEMP/appjs"; then
-                echo 'Native share API still present.' >&2
-                exit 1
-              fi
-              echo 'GEO5_CLIPBOARD_SHARE_VERIFIED'
+              ! grep -q 'navigator.share' "$RUNNER_TEMP/appjs"
+              grep -qi '^content-type: image/jpeg' "$RUNNER_TEMP/gisog.headers"
+              grep -qi '^content-type: image/jpeg' "$RUNNER_TEMP/placeog.headers"
+              file "$RUNNER_TEMP/gisog" | grep -q '1200x630'
+              file "$RUNNER_TEMP/placeog" | grep -q '1200x630'
+              echo 'GEO5_PRODUCTION_AND_SOCIAL_CARDS_VERIFIED'
               exit 0
             fi
-            echo "Waiting for Geo5: root=$ROOT api=$API place=$PLACE appjs=$APPJS"
+            echo "Waiting for Geo5: root=$ROOT api=$API place=$PLACE appjs=$APPJS gisog=$GISOG placeog=$PLACEOG"
             sleep 5
           done
 
