@@ -14,3 +14,5 @@ dialog{width:min(450px,calc(100% - 24px));border:1px solid var(--line2);border-r
 
 .app-actions{display:flex;gap:8px;justify-content:center;align-items:center;margin:10px auto 0;max-width:720px}.app-action{border:1px solid var(--line);background:rgba(8,25,52,.72);color:var(--soft);border-radius:999px;padding:8px 13px;font-size:9px;font-weight:750;cursor:pointer}.app-action:hover{border-color:var(--line2);background:rgba(20,56,104,.78)}.app-action[hidden]{display:none!important}
 @media(max-width:680px){.topbar-inner{grid-template-columns:auto 1fr auto;gap:7px}.brand strong{font-size:12px}.brandmark{width:25px;height:25px}.mode{min-width:78px;padding:7px 9px}.toolbar{gap:3px}.icon{width:31px;height:31px}.app-actions{margin-top:8px}.app-action{padding:8px 11px}}
+
+.result-actions a.secondary{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
