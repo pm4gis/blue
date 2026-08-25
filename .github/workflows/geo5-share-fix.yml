@@ -1,0 +1,38 @@
+name: Geo5 share clipboard fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/geo5-share-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replace native share sheet with clipboard copy
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('geo5/public/app.js')
+          s = p.read_text(encoding='utf-8')
+          old = "async function doShare(text,url){try{if(navigator.share)await navigator.share({title:'Geo5',text,url});else{await navigator.clipboard.writeText(text+'\\n'+url);toast('Result copied')}}catch(e){if(e?.name!=='AbortError')toast('Could not share')}}"
+          new = "async function doShare(text,url){try{await navigator.clipboard.writeText(text+'\\n'+url);toast('Copied for sharing')}catch{toast('Could not copy')}}"
+          if old not in s:
+              raise SystemExit('Expected Geo5 share function not found')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          PY
+      - name: Commit change
+        shell: bash
+        run: |
+          git config user.name 'Geo5 deployment bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add geo5/public/app.js
+          git commit -m 'Make Geo5 share copy to clipboard'
+          git pull --rebase origin main
+          git push origin HEAD:main
