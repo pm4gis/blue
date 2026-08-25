@@ -1,0 +1,72 @@
+name: Geo5 render social cards
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'geo5/social/**'
+      - '.github/workflows/geo5-render-social.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Render 1200x630 social cards
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/geo5-social
+          npm install --prefix /tmp/geo5-social --no-audit --no-fund sharp@0.34.3
+          node <<'NODE'
+          const sharp = require('/tmp/geo5-social/node_modules/sharp');
+          const jobs = [
+            ['geo5/social/og-gis.svg','geo5/public/og-gis.jpg'],
+            ['geo5/social/og-place.svg','geo5/public/og-place.jpg']
+          ];
+          Promise.all(jobs.map(([src,dst]) => sharp(src)
+            .resize(1200,630,{fit:'fill'})
+            .jpeg({quality:88,chromaSubsampling:'4:4:4',mozjpeg:true})
+            .toFile(dst)
+          )).then(info => console.log(info)).catch(err => { console.error(err); process.exit(1); });
+          NODE
+          python <<'PY'
+          from pathlib import Path
+          for name in ('geo5/public/index.html','geo5/public/place.html'):
+              p=Path(name)
+              s=p.read_text()
+              s=s.replace('og-gis.png','og-gis.jpg').replace('og-place.png','og-place.jpg')
+              if 'og:image:width' not in s:
+                  marker='<link rel="stylesheet" href="/styles.css">'
+                  tags='  <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:type" content="image/jpeg">\n'
+                  s=s.replace(marker,tags+marker)
+              p.write_text(s)
+          PY
+          file geo5/public/og-gis.jpg geo5/public/og-place.jpg
+          python <<'PY'
+          from PIL import Image
+          for f in ('geo5/public/og-gis.jpg','geo5/public/og-place.jpg'):
+              im=Image.open(f)
+              assert im.size == (1200,630), (f, im.size)
+              print(f, im.size)
+          PY
+      - name: Commit rendered cards and clean failed staging
+        run: |
+          set -euo pipefail
+          git config user.name 'Geo5 deployment bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git rm -f geo5/public/og-gis.png geo5/public/og-place.png || true
+          git rm -rf geo5/.social geo5/.social-q20 || true
+          git rm -f geo5/.og-gis.jpg.b64 geo5/.og-place.jpg.b64 || true
+          git rm -f .github/workflows/geo5-install-social-images.yml || true
+          git add geo5/public/og-gis.jpg geo5/public/og-place.jpg geo5/public/index.html geo5/public/place.html geo5/social/og-gis.svg geo5/social/og-place.svg
+          git commit -m 'Publish Geo5 GIS and PLACE social preview cards' || exit 0
+          git pull --rebase origin main
+          git push origin HEAD:main
