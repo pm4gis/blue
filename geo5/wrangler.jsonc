@@ -1,6 +1,7 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "geo5",
+  "account_id": "a08ad3624a2cdfed44f6721ad412d6c2",
   "main": "src/index.js",
   "compatibility_date": "2026-08-25",
   "compatibility_flags": [
