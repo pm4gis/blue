@@ -1,11 +1,12 @@
 name: Geo5 Cloudflare OAuth deploy
-# production deployment with puzzle-pool, PLACE maps and social-card verification
+# production deployment with puzzle-pool, PLACE maps, social-card verification and GeoFive domain
 
 on:
   push:
     branches: [main]
     paths:
       - '.github/workflows/geo5-cloudflare-oauth.yml'
+      - 'geo5/wrangler.jsonc'
 
 permissions:
   contents: write
