@@ -18,6 +18,10 @@
     {
       "pattern": "geo5.pm4gis.nz",
       "custom_domain": true
+    },
+    {
+      "pattern": "geofive.pm4gis.nz",
+      "custom_domain": true
     }
   ]
 }
